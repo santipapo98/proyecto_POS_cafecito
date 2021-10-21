@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import font
+import psycopg2
 
 root = Tk()
 
@@ -9,9 +10,34 @@ cafe = "Cafe________________________________________700"
 aromatica = "Aromatica____________________________________700"
 poker = "Poker______________________________________3000"
 
+#funciones para la base de datos
+class base_datos:
+    
+    def conectar_bd():
+        con = psycopg2.connect(
+            host = 'localhost',
+            database = 'proyecto_cafecito',
+            user = 'postgres',
+            password = 'santipapo98'
+            )
+        cur= con.cursor()
+        return con, cur
+
+    def cerrar_conexion(conexion, cursor):
+        conexion.commit()
+        conexion.close()
+        cursor.close()
+
 #Diccionario con todos los productos
 
 dic_productos = {"Cafe" : 0, "Aromatica" : 0, "Poker" : 0}
+
+def ingresar_productos_bd():
+    conexion, cursor = base_datos.conectar_bd()
+    for item in dic_productos:
+        cursor.execute('update venta_dia set cantidad = (cantidad+ %s) where producto = %s', (dic_productos[item], item))
+    base_datos.cerrar_conexion(conexion,cursor)
+
 
 def aumentar_producto(nombre_producto):
     dic_productos [nombre_producto] += 1
@@ -47,7 +73,7 @@ boton_poker.place(x=100, y=200)
 boton_borrar_item = Button(frame_objetos, text = "Borrar Seleccion", font = ("Arial", 12), command=lambda: [disminuir_productos((lista_objetos.get(ANCHOR).split("_")[0])), lista_objetos.delete(ANCHOR) ])
 boton_borrar_item.place(x=100, y=600)
 
-boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12))
+boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12), command=lambda: [ingresar_productos_bd(), lista_objetos.delete(0, END)])
 boton_anadir.place(x = 250, y=600)
 
 boton_borrar_lista = Button(frame_objetos, text = "Borrar Lista", font = ("Arial", 12), command= lambda: [lista_objetos.delete(0, END), reiniciar_valores_diccionario()])
