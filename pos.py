@@ -3,6 +3,7 @@ from tkinter import font
 import psycopg2
 from fpdf import FPDF
 from datetime import datetime
+import os
 
 root = Tk()
 
@@ -10,7 +11,24 @@ root.geometry("1360x720")
 
 cafe = "Cafe________________________________________700"
 aromatica = "Aromatica____________________________________700"
-poker = "Poker______________________________________3000"
+poker = "Poker_______________________________________3.000"
+brandy = "Brandy_____________________________________40.000"
+brandy_media = "Brandy 1/2____________________________________20.000"
+aguardiente_light = "Aguardiente Light____________________________35.000"
+aguardiente_light_media = "Aguardiente Light 1/2_______________________17.500"
+aguardiente = "Aguardiente____________________________________30.000"
+aguardiente_media = "Aguardiente 1/2_______________________________15.000"
+ron = "Ron________________________________________50.000"
+ron_media = "Ron 1/2__________________________________25.000"
+cola_pola = "Cola y Pola___________________________________3.000"
+club = "Club________________________________________4.000"
+club_negra = "Club Negra_____________________________________5.000"
+aguila_light = "Aguila Light____________________________________3.000"
+pony_grande = "Pony Malta Grande_____________________________3.000"
+pony_peque = "Pony Malta Peque_____________________________1.500"
+gaseosa = "Gaseosa____________________________________3.000"
+agua_peque = "Agua Peque__________________________________1.000"
+
 
 #funciones para la base de datos
 class base_datos:
@@ -32,7 +50,8 @@ class base_datos:
 
 #Diccionario con todos los productos
 
-dic_productos = {"Cafe" : 0, "Aromatica" : 0, "Poker" : 0}
+dic_productos = {"Brandy" : 0, "Brandy 1/2" : 0, "Aguardiente Light" : 0, "Aguardiente Light 1/2" : 0, "Aguardiente" : 0, "Aguardiente 1/2" : 0, "Ron" : 0, "Ron 1/2" : 0, "Poker" : 0,
+                "Cola y Pola" : 0, "Club" : 0, "Club Negra" : 0, "Aguila Light" : 0, "Pony Malta Grande" : 0, "Pony Malta Peque" : 0, "Gaseosa" :0, "Cafe" : 0, "Aromatica" : 0, "Agua Peque" : 0}
 
 #funcion que actualiza los valores vendidos durante el dia
 def ingresar_productos_bd():
@@ -49,17 +68,26 @@ def reiniciar_valores_venta_dia():
     base_datos.cerrar_conexion(conexion, cursor)
 
 def terminar_dia():
+    i = 0
     conexion, cursor = base_datos.conectar_bd()
-    cursor.execute('insert into historico_ventas (id, producto, cantidad) select id, producto, cantidad from venta_dia')
-    #generar_reporte()
+    cursor.execute('insert into historico_ventas (producto, cantidad) select * from venta_dia;')
+    cursor.execute('select cantidad from venta_dia')
+    ventas = cursor.fetchall()
+    for item in dic_productos.keys():
+        cursor.execute('update inventario set cantidad_actual = (cantidad_actual - %s) where producto = %s', (int((ventas[i])[0]), item))
+        i +=1
     base_datos.cerrar_conexion(conexion, cursor)
-
+    root.destroy()
+    os.system('C:/Users/Santiago/Desktop/proyecto_POS_cafecito/Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf')
+    
 def aumentar_producto(nombre_producto):
     dic_productos [nombre_producto] += 1
+    
 
 def disminuir_productos(nombre_producto):
     if dic_productos [nombre_producto] > 0:
         dic_productos [nombre_producto] -= 1
+    
         
 def reiniciar_valores_diccionario():
     for producto in list(dic_productos):
@@ -101,36 +129,92 @@ frame_objetos.pack()
 frame_objetos.place(x=860, y=42)
 frame_objetos.config(relief= SUNKEN, width= 500, height=720, bg= "#E86346")
 
+scrollbar = Scrollbar(root)
+scrollbar.pack(side = RIGHT, fill = BOTH)
+
+
 lista_objetos = Listbox(frame_objetos)
-lista_objetos.config(width=50, height=30, bg="#FFC559", font=('TkMenuFont, 12'))
-lista_objetos.place(x =42, y=10)
+lista_objetos.config(width=50, height=30, bg="#FFC559", font=('TkMenuFont, 12'), yscrollcommand=scrollbar.set)
+lista_objetos.place(x =25, y=10)
+scrollbar.config(command=lista_objetos.yview)
 
-boton_cafe = Button(root, text = "Cafe Vendido", font = ("Arial", 12), command=lambda:[lista_objetos.insert(END, cafe), aumentar_producto("Cafe")])
-boton_cafe.place(x=100, y=100)
+boton_cafe = Button(root, text = "Cafe", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, cafe), aumentar_producto("Cafe"), gestionar_botones()])
+boton_cafe.place(x=50, y=60)
 
-boton_aromatica = Button(root, text = "Aromatica Vendida", font = ("Arial", 12), command=lambda:[lista_objetos.insert(END, aromatica), aumentar_producto("Aromatica")])
-boton_aromatica.place(x=100, y=150)
+boton_aromatica = Button(root, text = "Aromatica", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aromatica), aumentar_producto("Aromatica"), gestionar_botones()])
+boton_aromatica.place(x=50, y=170)
 
-boton_poker = Button(root, text = "Poker Vendida", font = ("Arial", 12), command=lambda:[lista_objetos.insert(END, poker), aumentar_producto("Poker")])
-boton_poker.place(x=100, y=200)
+boton_poker = Button(root, text = "Poker", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, poker), aumentar_producto("Poker"), gestionar_botones()])
+boton_poker.place(x=50, y=280)
 
-boton_borrar_item = Button(frame_objetos, text = "Borrar Seleccion", font = ("Arial", 12), command=lambda: [disminuir_productos((lista_objetos.get(ANCHOR).split("_")[0])), lista_objetos.delete(ANCHOR) ])
-boton_borrar_item.place(x=100, y=600)
+boton_brandy = Button(root, text = "Brandy", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, brandy), aumentar_producto("Brandy"), gestionar_botones()])
+boton_brandy.place(x=50, y=390)
 
-boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12), command=lambda: [ingresar_productos_bd(), lista_objetos.delete(0, END)])
-boton_anadir.place(x = 250, y=600)
+boton_brandy_media = Button(root, text = "Brandy 1/2", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, brandy_media), aumentar_producto("Brandy 1/2"), gestionar_botones()])
+boton_brandy_media.place(x=50, y=500)
 
-if lista_objetos.size() == 0:
-    boton_anadir["state"] = DISABLED
-    boton_borrar_item["state"] = DISABLED
-elif lista_objetos.size() > 0:
-    boton_anadir["state"] = NORMAL
-    boton_borrar_item["state"] = ACTIVE
+boton_aguardiente_light = Button(root, text = "Aguardiente \nLight", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aguardiente_light), aumentar_producto("Aguardiente Light"), gestionar_botones()])
+boton_aguardiente_light.place(x=50, y=610)
 
-boton_borrar_lista = Button(frame_objetos, text = "Borrar Lista", font = ("Arial", 12), command= lambda: [lista_objetos.delete(0, END), reiniciar_valores_diccionario()])
-boton_borrar_lista.place(x = 400, y=600)
+boton_aguardiente_light_media = Button(root, text = "Aguardiente \nLight 1/2", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aguardiente_light_media), aumentar_producto("Aguardiente Light 1/2"), gestionar_botones()])
+boton_aguardiente_light_media.place(x=200, y=60)
 
-boton_borrar_lista = Button(frame_objetos, text = "TERMINAR DIA", font = ("Arial", 12), command= lambda: [PDF.generar_reporte(), reiniciar_valores_venta_dia()])
-boton_borrar_lista.place(x = 250, y=650)
+boton_aguardiente = Button(root, text = "Aguardiente", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aguardiente), aumentar_producto("Aguardiente"), gestionar_botones()])
+boton_aguardiente.place(x=200, y=170)
+
+boton_aguardiente_media = Button(root, text = "Aguardiente \n1/2", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aguardiente_media), aumentar_producto("Aguardiente 1/2"), gestionar_botones()])
+boton_aguardiente_media.place(x=200, y=280)
+
+boton_ron = Button(root, text = "Ron", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, ron), aumentar_producto("Ron"), gestionar_botones()])
+boton_ron.place(x=200, y=390)
+
+boton_ron_media = Button(root, text = "Ron 1/2", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, ron_media), aumentar_producto("Ron 1/2"), gestionar_botones()])
+boton_ron_media.place(x=200, y=500)
+
+boton_cola_pola = Button(root, text = "Cola y Pola", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, cola_pola), aumentar_producto("Cola y Pola"), gestionar_botones()])
+boton_cola_pola.place(x=200, y=610)
+
+boton_club = Button(root, text = "Club", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, club), aumentar_producto("Club"), gestionar_botones()])
+boton_club.place(x=350, y=60)
+
+boton_club_negra = Button(root, text = "Club Negra", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, club_negra), aumentar_producto("Club Negra"), gestionar_botones()])
+boton_club_negra.place(x=350, y=170)
+
+boton_aguila_light = Button(root, text = "Aguila Light", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, aguila_light), aumentar_producto("Aguila Light"), gestionar_botones()])
+boton_aguila_light.place(x=350, y=280)
+
+boton_pony_malta_grande = Button(root, text = "Pony Malta \nGrande", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, pony_grande), aumentar_producto("Pony Malta Grande"), gestionar_botones()])
+boton_pony_malta_grande.place(x=350, y=390)
+
+boton_pony_malta_peque = Button(root, text = "Pony Malta \nPeque", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, pony_peque), aumentar_producto("Pony Malta Peque"), gestionar_botones()])
+boton_pony_malta_peque.place(x=350, y=500)
+
+boton_gaseosa = Button(root, text = "Gaseosa", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, gaseosa), aumentar_producto("Gaseosa"), gestionar_botones()])
+boton_gaseosa.place(x=350, y=610)
+
+boton_agua_peque = Button(root, text = "Agua Peque", font = ("Arial", 12), width= 10, height=5, command=lambda:[lista_objetos.insert(END, agua_peque), aumentar_producto("Agua Peque"), gestionar_botones()])
+boton_agua_peque.place(x=500, y=60)
+
+boton_borrar_item = Button(frame_objetos, text = "Borrar Seleccion", font = ("Arial", 12), command=lambda: [disminuir_productos((lista_objetos.get(ANCHOR).split("_")[0])), lista_objetos.delete(ANCHOR), gestionar_botones()])
+boton_borrar_item.place(x=50, y=600)
+boton_borrar_item["state"] = DISABLED
+
+boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12), command=lambda: [ingresar_productos_bd(), lista_objetos.delete(0, END), gestionar_botones()])
+boton_anadir.place(x = 200, y=600)
+boton_anadir["state"]= DISABLED
+
+def gestionar_botones():
+    if lista_objetos.size() == 0:
+        boton_anadir["state"] = DISABLED
+        boton_borrar_item["state"] = DISABLED
+    elif lista_objetos.size() > 0:
+        boton_anadir["state"] = ACTIVE
+        boton_borrar_item["state"] = ACTIVE
+
+boton_borrar_lista = Button(frame_objetos, text = "Borrar Lista", font = ("Arial", 12), command= lambda: [lista_objetos.delete(0, END), reiniciar_valores_diccionario(), gestionar_botones()])
+boton_borrar_lista.place(x = 350, y=600)
+
+boton_terminar_dia = Button(frame_objetos, text = "TERMINAR DIA", font = ("Arial", 12), command= lambda: [PDF.generar_reporte(), terminar_dia(), reiniciar_valores_venta_dia()])
+boton_terminar_dia.place(x = 200, y=640)
 
 mainloop()
