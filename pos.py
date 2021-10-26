@@ -67,18 +67,27 @@ def reiniciar_valores_venta_dia():
     cursor.execute('update venta_dia set cantidad = 0')
     base_datos.cerrar_conexion(conexion, cursor)
 
-def terminar_dia():
+def actualizar_inventario_actual():
     i = 0
     conexion, cursor = base_datos.conectar_bd()
     cursor.execute('insert into historico_ventas (producto, cantidad) select * from venta_dia;')
-    cursor.execute('select cantidad from venta_dia')
+    cursor.execute('select * from venta_dia')
     ventas = cursor.fetchall()
     for item in dic_productos.keys():
-        cursor.execute('update inventario set cantidad_actual = (cantidad_actual - %s) where producto = %s', (int((ventas[i])[0]), item))
+        cursor.execute('update inventario set cantidad_actual = (cantidad_actual - %s) where producto = %s', (int((ventas[i])[1]), item))
         i +=1
     base_datos.cerrar_conexion(conexion, cursor)
-    root.destroy()
-    os.system('C:/Users/Santiago/Desktop/proyecto_POS_cafecito/Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf')
+
+def terminar_dia():
+    top =Toplevel()
+    top.geometry("300x100")
+    top.config(bg= "#EBA152")
+    label = Label(top, text="Desea terminar la jornada ?", font=("Helvetica", 12), bg= "#EBA152").pack()
+    boton1 = Button(top, width=10, text = "Si", command = lambda: [actualizar_inventario_actual(), reiniciar_valores_venta_dia(),root.destroy(),
+    os.system('C:/Users/Santiago/Desktop/proyecto_POS_cafecito/Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf')])
+    boton2 = Button(top, width=10, text= "No", command= top.destroy)
+    boton1.place(x=20, y=30)
+    boton2.place(x=200, y=30)
     
 def aumentar_producto(nombre_producto):
     dic_productos [nombre_producto] += 1
@@ -107,6 +116,7 @@ class PDF(FPDF):
         record = cursor.fetchall()
         cursor.execute('select cantidad from venta_dia')
         ventas = cursor.fetchall()
+        base_datos.cerrar_conexion(conexion,cursor)
         pdf.cell(70, 10, 'Articulo', 'B')
         pdf.cell(30, 10, 'Precio', 'B')
         pdf.cell(30, 10, 'Entrada', 'B')
@@ -118,7 +128,6 @@ class PDF(FPDF):
             pdf.cell(30, 10, str((record[item])[2]))
             pdf.cell(30, 10, str((ventas[item])[0]))
             pdf.cell(30, 10, str(int((record[item])[2])-int((ventas[item])[0])) , ln=True)
-        base_datos.cerrar_conexion(conexion,cursor)
         pdf.output('Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf','F')
         
 
@@ -199,7 +208,7 @@ boton_borrar_item = Button(frame_objetos, text = "Borrar Seleccion", font = ("Ar
 boton_borrar_item.place(x=50, y=600)
 boton_borrar_item["state"] = DISABLED
 
-boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12), command=lambda: [ingresar_productos_bd(), lista_objetos.delete(0, END), gestionar_botones()])
+boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 12), command=lambda: [ingresar_productos_bd(), reiniciar_valores_diccionario(), lista_objetos.delete(0, END), gestionar_botones()])
 boton_anadir.place(x = 200, y=600)
 boton_anadir["state"]= DISABLED
 
@@ -214,7 +223,7 @@ def gestionar_botones():
 boton_borrar_lista = Button(frame_objetos, text = "Borrar Lista", font = ("Arial", 12), command= lambda: [lista_objetos.delete(0, END), reiniciar_valores_diccionario(), gestionar_botones()])
 boton_borrar_lista.place(x = 350, y=600)
 
-boton_terminar_dia = Button(frame_objetos, text = "TERMINAR DIA", font = ("Arial", 12), command= lambda: [PDF.generar_reporte(), terminar_dia(), reiniciar_valores_venta_dia()])
+boton_terminar_dia = Button(frame_objetos, text = "TERMINAR DIA", font = ("Arial", 12), command= lambda: [PDF.generar_reporte(), terminar_dia()])
 boton_terminar_dia.place(x = 200, y=640)
 
 mainloop()
