@@ -8,6 +8,8 @@ import os
 root = Tk()
 
 root.geometry("1360x720")
+root.resizable(False, False)
+
 
 cafe = "Cafe________________________________________700"
 aromatica = "Aromatica____________________________________700"
@@ -81,9 +83,10 @@ def actualizar_inventario_actual():
 def terminar_dia():
     top =Toplevel()
     top.geometry("300x100")
+    top.resizable(False, False)
     top.config(bg= "#EBA152")
     label = Label(top, text="Desea terminar la jornada ?", font=("Helvetica", 12), bg= "#EBA152").pack()
-    boton1 = Button(top, width=10, text = "Si", command = lambda: [actualizar_inventario_actual(), reiniciar_valores_venta_dia(),root.destroy(),
+    boton1 = Button(top, width=10, text = "Si", command = lambda: [actualizar_inventario_actual(), reiniciar_valores_venta_dia(),root.quit(),
     os.system('C:/Users/Santiago/Desktop/proyecto_POS_cafecito/Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf')])
     boton2 = Button(top, width=10, text= "No", command= top.destroy)
     boton1.place(x=20, y=30)
@@ -129,7 +132,65 @@ class PDF(FPDF):
             pdf.cell(30, 10, str((ventas[item])[0]))
             pdf.cell(30, 10, str(int((record[item])[2])-int((ventas[item])[0])) , ln=True)
         pdf.output('Ventas_Dia_' + datetime.today().strftime('%Y-%m-%d') + '.pdf','F')
-        
+
+#Funcion para actualizar el inventario de acuerdo a lo provisto por el usuario
+
+def actualizar_inventario(valores):
+    conexion, cursor = base_datos.conectar_bd()
+    i=0
+    for item in dic_productos.keys():
+        cursor.execute('update inventario set cantidad_actual = (cantidad_actual + %s) where producto = %s', (int(valores[i].get()), item))
+        i+=1
+    base_datos.cerrar_conexion(conexion, cursor)
+#Funcion para anadir datos que provee el usuario al inventario
+
+def anadir_articulos_inventario():
+    posy = 10
+    entradas = list()
+    top =Toplevel()
+    top.geometry("300x650")
+    top.resizable(False, False)
+    top.config(bg= "#EBA152")
+    for item in dic_productos.keys():
+        entradas.append(Entry(top))
+        Label(top, text = item, bg= "#EBA152").place(x= 10, y =posy)
+        entradas[-1].insert(END, "0")
+        entradas[-1].place(x = 140, y=posy)
+        posy += 30
+    Button(top, text = "Actualizar", command = lambda : [actualizar_inventario(entradas), top.destroy()]).place(x =80, y = 600)
+
+def ver_inventario():
+    conexion, cursor = base_datos.conectar_bd()
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.add_page()
+    pdf.set_font('Helvetica', '', 16)
+    pdf.cell(0, 10, 'Inventario Actual Cafe el Cafecito', 0, 1, 'C')
+    pdf.cell(0, 10, 'Reporte generado el dia: ' + datetime.today().strftime('%Y-%m-%d'), 'B', 2, 'C')
+    cursor.execute('select producto, precio_producto, cantidad_actual from inventario')
+    record = cursor.fetchall()
+    base_datos.cerrar_conexion(conexion,cursor)
+    pdf.cell(120, 10, 'Articulo', 'B')
+    pdf.cell(100, 10, 'Inventario Actual', 'B', ln=True)
+    for item in range(len(record)):
+        pdf.cell(120, 10, str((record[item])[0]))
+        pdf.cell(100, 10, str(int((record[item])[2])) , ln=True)
+    pdf.output('Inventario_Fecha_' + datetime.today().strftime('%Y-%m-%d') + '.pdf','F')
+    os.system('C:/Users/Santiago/Desktop/proyecto_POS_cafecito/Inventario_Fecha_' + datetime.today().strftime('%Y-%m-%d') + '.pdf')
+# Menu superior
+
+menu_superior = Menu(root)
+root.config(menu=menu_superior)
+
+menu_inventario = Menu(menu_superior)
+menu_superior.add_cascade(label= "Inventario", menu = menu_inventario)
+menu_inventario.add_command(label="Actualizar Inventario", command= anadir_articulos_inventario)
+menu_inventario.add_separator()
+menu_inventario.add_command(label="Ver Inventario", command=ver_inventario)
+menu_salir = Menu(menu_superior)
+menu_superior.add_cascade(label="Salir", menu=menu_salir)
+menu_salir.add_command(label="Cerrar Programa", command=root.quit)
+
+
 
 titulo = Label(root, text="Cafe el Cafecito", font = ("Arial", 24), bg= "#EBA152", width=1360).pack()
 
@@ -212,6 +273,7 @@ boton_anadir = Button(frame_objetos, text = "Anadir Objetos", font = ("Arial", 1
 boton_anadir.place(x = 200, y=600)
 boton_anadir["state"]= DISABLED
 
+
 def gestionar_botones():
     if lista_objetos.size() == 0:
         boton_anadir["state"] = DISABLED
@@ -226,4 +288,8 @@ boton_borrar_lista.place(x = 350, y=600)
 boton_terminar_dia = Button(frame_objetos, text = "TERMINAR DIA", font = ("Arial", 12), command= lambda: [PDF.generar_reporte(), terminar_dia()])
 boton_terminar_dia.place(x = 200, y=640)
 
+def disable_event():
+    pass
+
+root.protocol("WM_DELETE_WINDOW", disable_event)
 mainloop()
